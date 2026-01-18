@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
 
 const registerUser = async (req, res) => {
@@ -19,14 +20,11 @@ const registerUser = async (req, res) => {
     });
 
     return res.status(201).json({
-      success: true,
-      message: 'Registration successfully',
       data: user,
     });
   } catch (error) {
     if (error.code === 'P2002') {
       return res.status(409).json({
-        success: false,
         message: 'Username already exists',
       });
     }
@@ -34,10 +32,32 @@ const registerUser = async (req, res) => {
     console.error('[REGISTER_USER]', error);
 
     return res.status(500).json({
-      success: false,
       message: 'Internal server error',
     });
   }
 };
 
-export { registerUser };
+const loginUser = async (req, res) => {
+  const { username, password } = req.body;
+
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: { id: true, password: true },
+  });
+  if (!user) {
+    return res.status(401).json({ message: 'Invalid credentials' });
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return res.status(401).json({ message: 'Invalid credentials' });
+  }
+
+  const token = jwt.sign({ sub: user.id }, process.env.JWT_SECRET, {
+    expiresIn: '15d',
+  });
+
+  res.json({ token });
+};
+
+export { registerUser, loginUser };
