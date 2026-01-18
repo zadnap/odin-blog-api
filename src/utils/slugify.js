@@ -26,4 +26,4 @@ const generateUniqueSlug = async (title) => {
   return slug;
 };
 
-export default { generateUniqueSlug };
+export default generateUniqueSlug;
