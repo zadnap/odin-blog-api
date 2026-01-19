@@ -1,5 +1,5 @@
 import slugify from 'slugify';
-import { prisma } from '../lib/index.js';
+import prisma from '../lib/prisma.js';
 
 const generateUniqueSlug = async (title) => {
   const baseSlug = slugify(title, {
