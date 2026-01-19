@@ -1,7 +1,9 @@
+import { errorResponse } from '../utils/response.js';
+
 const requireRole = (...allowedRoles) => {
   return (req, res, next) => {
     if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Forbidden' });
+      return errorResponse(res, { statusCode: 403, message: 'Forbidden' });
     }
     next();
   };

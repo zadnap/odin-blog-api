@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
+import { errorResponse, successResponse } from '../utils/response.js';
 
 const registerUser = async (req, res) => {
   try {
@@ -19,45 +20,59 @@ const registerUser = async (req, res) => {
       },
     });
 
-    return res.status(201).json({
+    return successResponse(res, {
+      statusCode: 201,
+      message: 'User created successfully',
       data: user,
     });
   } catch (error) {
     if (error.code === 'P2002') {
-      return res.status(409).json({
+      return errorResponse(res, {
+        statusCode: 409,
         message: 'Username already exists',
       });
     }
 
     console.error('[REGISTER_USER]', error);
 
-    return res.status(500).json({
-      message: 'Internal server error',
-    });
+    return errorResponse(res);
   }
 };
 
 const loginUser = async (req, res) => {
-  const { username, password } = req.body;
+  try {
+    const { username, password } = req.body;
 
-  const user = await prisma.user.findUnique({
-    where: { username },
-    select: { id: true, password: true },
-  });
-  if (!user) {
-    return res.status(401).json({ message: 'Invalid credentials' });
+    const user = await prisma.user.findUnique({
+      where: { username },
+      select: { id: true, password: true },
+    });
+    if (!user) {
+      return errorResponse(res, {
+        statusCode: 401,
+        message: 'Invalid credentials',
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return errorResponse(res, {
+        statusCode: 401,
+        message: 'Invalid credentials',
+      });
+    }
+
+    const token = jwt.sign({ sub: user.id }, process.env.JWT_SECRET, {
+      expiresIn: '15d',
+    });
+    return successResponse(res, {
+      message: 'Login successfully',
+      data: { token },
+    });
+  } catch (error) {
+    console.error('[LOGIN_USER]', error);
+    return errorResponse(res);
   }
-
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    return res.status(401).json({ message: 'Invalid credentials' });
-  }
-
-  const token = jwt.sign({ sub: user.id }, process.env.JWT_SECRET, {
-    expiresIn: '15d',
-  });
-
-  res.json({ token });
 };
 
 export { registerUser, loginUser };

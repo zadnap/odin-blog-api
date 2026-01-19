@@ -1,4 +1,5 @@
 import passport from '../lib/passport.js';
+import { errorResponse } from '../utils/response.js';
 
 const requireAuth = (req, res, next) => {
   passport.authenticate('jwt', { session: false }, (err, user, info) => {
@@ -7,7 +8,8 @@ const requireAuth = (req, res, next) => {
     }
 
     if (!user) {
-      return res.status(401).json({
+      return errorResponse(res, {
+        statusCode: 401,
         message: info?.message || 'Unauthorized',
       });
     }

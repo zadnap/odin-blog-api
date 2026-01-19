@@ -1,27 +1,81 @@
 import prisma from '../lib/prisma.js';
+import { errorResponse, successResponse } from '../utils/response.js';
 import generateUniqueSlug from '../utils/slugify.js';
 
 const getPosts = async (req, res) => {
-  const posts = await prisma.post.findMany();
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-  return res.status(200).json(posts);
+    const [posts, total] = await Promise.all([
+      prisma.post.findMany({
+        where: {
+          published: true,
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              username: true,
+            },
+          },
+        },
+      }),
+      prisma.post.count({
+        where: {
+          published: true,
+        },
+      }),
+    ]);
+
+    return successResponse(res, {
+      data: posts,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error('[GET_POSTS]', error);
+    return errorResponse(res);
+  }
 };
 
 const getPostBySlug = async (req, res) => {
-  const slug = req.params.slug;
-  const post = await prisma.post.findUnique({
-    where: {
-      slug,
-    },
-  });
-
-  if (!post) {
-    return res.status(404).json({
-      message: 'Post not found',
+  try {
+    const slug = req.params.slug;
+    const post = await prisma.post.findFirst({
+      where: {
+        slug,
+        published: true,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
     });
-  }
 
-  return res.status(200).json(post);
+    if (!post) {
+      return errorResponse(res, { statusCode: 404, message: 'Post not found' });
+    }
+
+    return successResponse(res, { data: post });
+  } catch (error) {
+    console.error('[GET_POST_BY_SLUG]', error);
+    return errorResponse(res);
+  }
 };
 
 const createPost = async (req, res) => {
@@ -36,19 +90,25 @@ const createPost = async (req, res) => {
         content,
         userId,
       },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        content: true,
+        createdAt: true,
+      },
     });
 
-    return res.status(201).json(newPost);
+    return successResponse(res, { statusCode: 201, data: newPost });
   } catch (error) {
     console.error('[CREATE_POST]', error);
-
-    return res.status(500).json({ message: 'Fail to create new post' });
+    return errorResponse(res);
   }
 };
 
 const deletePost = async (req, res) => {
   try {
-    const postId = req.params.id;
+    const postId = req.params.postId;
 
     await prisma.post.delete({
       where: {
@@ -59,18 +119,15 @@ const deletePost = async (req, res) => {
     return res.status(204).send();
   } catch (error) {
     if (error.code === 'P2025') {
-      return res.status(404).json({ message: 'Post not found' });
+      return errorResponse(res, { statusCode: 404, message: 'Post not found' });
     }
 
-    console.error(error);
-
-    return res.status(500).json({
-      message: 'Internal server error',
-    });
+    console.error('[DELETE_POST]', error);
+    return errorResponse(res);
   }
 };
 
-const updatePost = async (req, res, next) => {
+const updatePost = async (req, res) => {
   try {
     const { postId } = req.params;
     const { title, content } = req.body;
@@ -90,9 +147,17 @@ const updatePost = async (req, res, next) => {
       },
     });
 
-    return res.status(200).json(updatedPost);
+    return successResponse(res, { data: updatedPost });
   } catch (error) {
-    next(error);
+    if (error.code === 'P2025') {
+      return errorResponse(res, {
+        statusCode: 404,
+        message: 'Post not found',
+      });
+    }
+
+    console.error('[UPDATE_POST]', error);
+    return errorResponse(res);
   }
 };
 
