@@ -7,12 +7,12 @@ const getPosts = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const isAdmin = req.user?.role === 'ADMIN';
+    const whereCondition = isAdmin ? {} : { published: true };
 
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
-        where: {
-          published: true,
-        },
+        where: whereCondition,
         skip,
         take: limit,
         orderBy: {
@@ -28,9 +28,7 @@ const getPosts = async (req, res) => {
         },
       }),
       prisma.post.count({
-        where: {
-          published: true,
-        },
+        where: whereCondition,
       }),
     ]);
 
@@ -52,10 +50,11 @@ const getPosts = async (req, res) => {
 const getPostBySlug = async (req, res) => {
   try {
     const slug = req.params.slug;
+    const isAdmin = req.user?.role === 'ADMIN';
     const post = await prisma.post.findFirst({
       where: {
         slug,
-        published: true,
+        ...(isAdmin ? {} : { published: true }),
       },
       include: {
         author: {
