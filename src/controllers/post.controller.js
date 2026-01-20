@@ -1,59 +1,18 @@
-import prisma from '../lib/prisma.js';
-import AppError from '../utils/AppError.js';
-import { getPagination } from '../utils/pagination.js';
-import { getPostVisibilityFilter } from '../utils/postVisibility.js';
+import postService from '../services/post.service.js';
 import { successResponse } from '../utils/response.js';
-import generateUniqueSlug from '../utils/slugify.js';
 
 const getPosts = async (req, res) => {
-  const { page, limit, skip } = getPagination(req.query);
-  const whereCondition = getPostVisibilityFilter(req.user);
-  const [posts, total] = await Promise.all([
-    prisma.post.findMany({
-      where: whereCondition,
-      skip,
-      take: limit,
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
-        author: {
-          select: { id: true, username: true },
-        },
-      },
-    }),
-    prisma.post.count({ where: whereCondition }),
-  ]);
+  const { posts, meta } = await postService.getPosts(req.user, req.query);
 
   return successResponse(res, {
     data: posts,
-    meta: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
+    meta,
   });
 };
 
 const getPostBySlug = async (req, res) => {
-  const slug = req.params.slug;
   const isAdmin = req.user?.role === 'ADMIN';
-  const post = await prisma.post.findUnique({
-    where: { slug },
-    include: {
-      author: {
-        select: {
-          id: true,
-          username: true,
-        },
-      },
-    },
-  });
-
-  if (!post || (!isAdmin && !post.published)) {
-    throw new AppError('Post not found', 404);
-  }
+  const post = await postService.getPostBySlug(req.params.slug, isAdmin);
 
   return successResponse(res, { data: post });
 };
@@ -61,112 +20,36 @@ const getPostBySlug = async (req, res) => {
 const createPost = async (req, res) => {
   const userId = req.user.id;
   const { title, content } = req.body;
-
-  const newPost = await prisma.post.create({
-    data: {
-      slug: await generateUniqueSlug(title),
-      title,
-      content,
-      userId,
-    },
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      content: true,
-      createdAt: true,
-    },
-  });
+  const newPost = await postService.createPost(userId, { title, content });
 
   return successResponse(res, { statusCode: 201, data: newPost });
 };
 
 const deletePost = async (req, res) => {
   const postId = req.params.postId;
+  await postService.deletePost(postId);
 
-  await prisma.post.delete({
-    where: {
-      id: postId,
-    },
-  });
-
-  return successResponse(res, {
-    message: 'Post deleted successfully',
-  });
+  return successResponse(res, { message: 'Post deleted successfully' });
 };
 
 const updatePost = async (req, res) => {
-  const { postId } = req.params;
   const { title, content } = req.body;
-
-  const post = await prisma.post.findUnique({ where: { id: postId } });
-
-  if (!post) {
-    throw new AppError('Post not found', 404);
-  }
-
-  const data = {};
-
-  if (title !== undefined && title !== post.title) {
-    data.title = title;
-    data.slug = await generateUniqueSlug(title);
-  }
-
-  if (content !== undefined) {
-    data.content = content;
-  }
-
-  const updatedPost = await prisma.post.update({
-    where: { id: postId },
-    data,
-    select: {
-      id: true,
-      title: true,
-      content: true,
-      slug: true,
-      updatedAt: true,
-    },
+  const updatedPost = await postService.updatePost(req.resource, {
+    title,
+    content,
   });
 
   return successResponse(res, { data: updatedPost });
 };
 
 const publishPost = async (req, res) => {
-  const { postId } = req.params;
-
-  const post = await prisma.post.findUnique({ where: { id: postId } });
-
-  if (!post) {
-    throw new AppError('Post not found', 404);
-  }
-  if (post.published) {
-    throw new AppError('Post already published', 400);
-  }
-
-  await prisma.post.update({
-    where: { id: postId },
-    data: { published: true },
-  });
+  await postService.publishPost(req.resource);
 
   return successResponse(res);
 };
 
 const unpublishPost = async (req, res) => {
-  const { postId } = req.params;
-
-  const post = await prisma.post.findUnique({ where: { id: postId } });
-
-  if (!post) {
-    throw new AppError('Post not found', 404);
-  }
-  if (!post.published) {
-    throw new AppError('Post already unpublished', 400);
-  }
-
-  await prisma.post.update({
-    where: { id: postId },
-    data: { published: false },
-  });
+  await postService.unpublishPost(req.resource);
 
   return successResponse(res);
 };

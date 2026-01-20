@@ -4,17 +4,18 @@ import AppError from '../utils/AppError.js';
 const checkExists =
   ({ model, param = 'id', message }) =>
   async (req, res, next) => {
-    const value = req.params[param];
+    const id = req.params[param];
 
-    const exists = await prisma[model].findUnique({
-      where: { id: value },
-      select: { id: true },
+    const record = await prisma[model].findUnique({
+      where: { id },
     });
 
-    if (!exists) {
+    if (!record) {
       throw new AppError(message, 404);
     }
 
+    req.resource = record;
+    req.resourceType = model;
     next();
   };
 
