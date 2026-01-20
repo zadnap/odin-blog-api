@@ -1,70 +1,21 @@
-import prisma from '../lib/prisma.js';
-import { getPagination } from '../utils/pagination.js';
-import { errorResponse, successResponse } from '../utils/response.js';
+import { successResponse } from '../utils/response.js';
+import commentService from '../services/comment.service.js';
 
 const getComments = async (req, res) => {
-  const postId = req.params.postId;
-  const { page, limit, skip } = getPagination(req.query);
-  const [comments, total] = await Promise.all([
-    prisma.comment.findMany({
-      where: {
-        postId,
-      },
-      skip,
-      take: limit,
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            username: true,
-          },
-        },
-      },
-    }),
-    prisma.comment.count({
-      where: {
-        postId,
-      },
-    }),
-  ]);
+  const { comments, meta } = await commentService.getComments(
+    req.params.postId,
+    req.query
+  );
 
   return successResponse(res, {
     data: comments,
-    meta: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
+    meta,
   });
 };
 
 const getCommentById = async (req, res) => {
   const commentId = req.params.commentId;
-
-  const comment = await prisma.comment.findUnique({
-    where: {
-      id: commentId,
-    },
-    include: {
-      author: {
-        select: {
-          id: true,
-          username: true,
-        },
-      },
-    },
-  });
-
-  if (!comment) {
-    return errorResponse(res, {
-      statusCode: 404,
-      message: 'Comment not found',
-    });
-  }
+  const comment = await commentService.getCommentById(commentId);
 
   return successResponse(res, { data: comment });
 };
@@ -73,18 +24,10 @@ const createComment = async (req, res) => {
   const userId = req.user.id;
   const postId = req.params.postId;
   const content = req.body.content;
-
-  const newComment = await prisma.comment.create({
-    data: {
-      content,
-      userId,
-      postId,
-    },
-    select: {
-      id: true,
-      content: true,
-      createdAt: true,
-    },
+  const newComment = await commentService.createComment({
+    userId,
+    postId,
+    content,
   });
 
   return successResponse(res, { statusCode: 201, data: newComment });
@@ -92,12 +35,7 @@ const createComment = async (req, res) => {
 
 const deleteComment = async (req, res) => {
   const commentId = req.params.commentId;
-
-  await prisma.comment.delete({
-    where: {
-      id: commentId,
-    },
-  });
+  await commentService.deleteComment(commentId);
 
   return res.status(204).send();
 };
@@ -105,18 +43,7 @@ const deleteComment = async (req, res) => {
 const updateComment = async (req, res) => {
   const commentId = req.params.commentId;
   const content = req.body.content;
-
-  const updatedComment = await prisma.comment.update({
-    where: { id: commentId },
-    data: {
-      content,
-    },
-    select: {
-      id: true,
-      content: true,
-      updatedAt: true,
-    },
-  });
+  const updatedComment = await commentService.updateComment(commentId, content);
 
   return successResponse(res, { data: updatedComment });
 };
