@@ -19,8 +19,9 @@ const errorHandler = (err, req, res, next) => {
   }
 
   return errorResponse(res, {
-    statusCode: err.statusCode || 500,
-    message: err.message || 'Internal server error',
+    statusCode: err.statusCode,
+    message: err.message,
+    errors: err.errors,
   });
 };
 

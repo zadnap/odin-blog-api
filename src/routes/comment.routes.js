@@ -8,24 +8,30 @@ import {
   updateComment,
 } from '../controllers/comment.controller.js';
 import { commentValidator } from '../validators/index.js';
+import asyncHandler from '../utils/asyncHandler.js';
 
 const commentRouter = express.Router();
 
-commentRouter.get('/', getComments);
+commentRouter.get('/', asyncHandler(getComments));
 
-commentRouter.get('/:commentId', getCommentById);
-commentRouter.post('/', commentValidator, handleValidation, createComment);
+commentRouter.get('/:commentId', asyncHandler(getCommentById));
+commentRouter.post(
+  '/',
+  commentValidator,
+  handleValidation,
+  asyncHandler(createComment)
+);
 commentRouter.delete(
   '/:commentId',
   requireOwnership({ allowAdmin: true }),
-  deleteComment
+  asyncHandler(deleteComment)
 );
 commentRouter.put(
   '/:commentId',
   requireOwnership({ allowAdmin: false }),
   commentValidator,
   handleValidation,
-  updateComment
+  asyncHandler(updateComment)
 );
 
 export default commentRouter;

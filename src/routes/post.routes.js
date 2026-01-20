@@ -20,10 +20,11 @@ import {
 } from '../middlewares/index.js';
 import ROLES from '../constants/roles.js';
 import commentRouter from './comment.routes.js';
+import asyncHandler from '../utils/asyncHandler.js';
 
 const postRouter = express.Router();
 
-postRouter.get('/', getPosts);
+postRouter.get('/', asyncHandler(getPosts));
 
 postRouter.post(
   '/',
@@ -31,7 +32,7 @@ postRouter.post(
   requireRole(ROLES.ADMIN),
   createPostValidator,
   handleValidation,
-  createPost
+  asyncHandler(createPost)
 );
 postRouter.get('/slug/:slug', getPostBySlug);
 postRouter.delete(
@@ -39,7 +40,7 @@ postRouter.delete(
   requireAuth,
   requireRole(ROLES.ADMIN),
   checkPostExists,
-  deletePost
+  asyncHandler(deletePost)
 );
 postRouter.put(
   '/:postId',
@@ -48,21 +49,21 @@ postRouter.put(
   checkPostExists,
   updatePostValidator,
   handleValidation,
-  updatePost
+  asyncHandler(updatePost)
 );
 postRouter.patch(
   '/:postId/publish',
   requireAuth,
   requireRole(ROLES.ADMIN),
   checkPostExists,
-  publishPost
+  asyncHandler(publishPost)
 );
 postRouter.patch(
   '/:postId/unpublish',
   requireAuth,
   requireRole(ROLES.ADMIN),
   checkPostExists,
-  unpublishPost
+  asyncHandler(unpublishPost)
 );
 
 postRouter.use(

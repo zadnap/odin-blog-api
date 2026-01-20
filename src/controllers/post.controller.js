@@ -1,7 +1,8 @@
 import prisma from '../lib/prisma.js';
+import AppError from '../utils/AppError.js';
 import { getPagination } from '../utils/pagination.js';
 import { getPostVisibilityFilter } from '../utils/postVisibility.js';
-import { errorResponse, successResponse } from '../utils/response.js';
+import { successResponse } from '../utils/response.js';
 import generateUniqueSlug from '../utils/slugify.js';
 
 const getPosts = async (req, res) => {
@@ -17,16 +18,11 @@ const getPosts = async (req, res) => {
       },
       include: {
         author: {
-          select: {
-            id: true,
-            username: true,
-          },
+          select: { id: true, username: true },
         },
       },
     }),
-    prisma.post.count({
-      where: whereCondition,
-    }),
+    prisma.post.count({ where: whereCondition }),
   ]);
 
   return successResponse(res, {
@@ -56,7 +52,7 @@ const getPostBySlug = async (req, res) => {
   });
 
   if (!post || (!isAdmin && !post.published)) {
-    return errorResponse(res, { statusCode: 404, message: 'Post not found' });
+    throw new AppError('Post not found', 404);
   }
 
   return successResponse(res, { data: post });
@@ -103,9 +99,13 @@ const updatePost = async (req, res) => {
   const { postId } = req.params;
   const { title, content } = req.body;
 
-  const data = {};
-
   const post = await prisma.post.findUnique({ where: { id: postId } });
+
+  if (!post) {
+    throw new AppError('Post not found', 404);
+  }
+
+  const data = {};
 
   if (title !== undefined && title !== post.title) {
     data.title = title;
@@ -145,10 +145,7 @@ const publishPost = async (req, res) => {
   });
 
   if (result.count === 0) {
-    return errorResponse(res, {
-      statusCode: 404,
-      message: 'Post already published',
-    });
+    throw new AppError('Post already published or not found', 409);
   }
 
   return successResponse(res);
@@ -168,10 +165,7 @@ const unpublishPost = async (req, res) => {
   });
 
   if (result.count === 0) {
-    return errorResponse(res, {
-      statusCode: 404,
-      message: 'Post already unpublished',
-    });
+    throw new AppError('Post already unpublished or not found', 409);
   }
 
   return successResponse(res);
