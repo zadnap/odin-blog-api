@@ -4,6 +4,7 @@ import requireRole from './require-role.middleware.js';
 import requireOwnership from './require-ownership.middleware.js';
 import upload from './upload.middleware.js';
 import checkPostExists from './check-post-exists.middleware.js';
+import errorHandler from './error-handler.middleware.js';
 
 export {
   handleValidation,
@@ -12,4 +13,5 @@ export {
   requireOwnership,
   upload,
   checkPostExists,
+  errorHandler,
 };
