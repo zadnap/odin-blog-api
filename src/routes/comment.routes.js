@@ -1,5 +1,9 @@
 import express from 'express';
-import { handleValidation, requireOwnership } from '../middlewares/index.js';
+import {
+  checkExists,
+  handleValidation,
+  requireOwnership,
+} from '../middlewares/index.js';
 import {
   createComment,
   deleteComment,
@@ -23,11 +27,21 @@ commentRouter.post(
 );
 commentRouter.delete(
   '/:commentId',
+  checkExists({
+    model: 'comment',
+    param: 'commentId',
+    message: 'Comment not found',
+  }),
   requireOwnership({ allowAdmin: true }),
   asyncHandler(deleteComment)
 );
 commentRouter.put(
   '/:commentId',
+  checkExists({
+    model: 'comment',
+    param: 'commentId',
+    message: 'Comment not found',
+  }),
   requireOwnership({ allowAdmin: false }),
   commentValidator,
   handleValidation,

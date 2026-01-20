@@ -1,9 +1,9 @@
-import { errorResponse } from '../utils/response.js';
+import AppError from '../utils/AppError.js';
 
 const requireRole = (...allowedRoles) => {
   return (req, res, next) => {
     if (!allowedRoles.includes(req.user.role)) {
-      return errorResponse(res, { statusCode: 403, message: 'Forbidden' });
+      throw new AppError('Forbidden', 403);
     }
     next();
   };

@@ -13,7 +13,7 @@ import {
   updatePostValidator,
 } from '../validators/index.js';
 import {
-  checkPostExists,
+  checkExists,
   handleValidation,
   requireAuth,
   requireRole,
@@ -39,14 +39,14 @@ postRouter.delete(
   '/:postId',
   requireAuth,
   requireRole(ROLES.ADMIN),
-  checkPostExists,
+  checkExists({ model: 'post', param: 'postId', message: 'Post not found' }),
   asyncHandler(deletePost)
 );
 postRouter.put(
   '/:postId',
   requireAuth,
   requireRole(ROLES.ADMIN),
-  checkPostExists,
+  checkExists({ model: 'post', param: 'postId', message: 'Post not found' }),
   updatePostValidator,
   handleValidation,
   asyncHandler(updatePost)
@@ -55,21 +55,21 @@ postRouter.patch(
   '/:postId/publish',
   requireAuth,
   requireRole(ROLES.ADMIN),
-  checkPostExists,
+  checkExists({ model: 'post', param: 'postId', message: 'Post not found' }),
   asyncHandler(publishPost)
 );
 postRouter.patch(
   '/:postId/unpublish',
   requireAuth,
   requireRole(ROLES.ADMIN),
-  checkPostExists,
+  checkExists({ model: 'post', param: 'postId', message: 'Post not found' }),
   asyncHandler(unpublishPost)
 );
 
 postRouter.use(
   '/:postId/comments',
   requireAuth,
-  checkPostExists,
+  checkExists({ model: 'post', param: 'postId', message: 'Post not found' }),
   commentRouter
 );
 
