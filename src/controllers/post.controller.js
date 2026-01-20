@@ -1,3 +1,4 @@
+import ROLES from '../constants/roles.js';
 import postService from '../services/post.service.js';
 import { successResponse } from '../utils/response.js';
 
@@ -11,7 +12,7 @@ const getPosts = async (req, res) => {
 };
 
 const getPostBySlug = async (req, res) => {
-  const isAdmin = req.user?.role === 'ADMIN';
+  const isAdmin = req.user?.role === ROLES.ADMIN;
   const post = await postService.getPostBySlug(req.params.slug, isAdmin);
 
   return successResponse(res, { data: post });
