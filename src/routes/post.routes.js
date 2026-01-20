@@ -11,11 +11,13 @@ import {
   updatePostValidator,
 } from '../validators/index.js';
 import {
+  checkPostExists,
   handleValidation,
   requireAuth,
   requireRole,
 } from '../middlewares/index.js';
 import ROLES from '../constants/roles.js';
+import commentRouter from './comment.routes.js';
 
 const postRouter = express.Router();
 
@@ -29,7 +31,7 @@ postRouter.post(
   handleValidation,
   createPost
 );
-postRouter.get('/:slug', getPostBySlug);
+postRouter.get('/slug/:slug', getPostBySlug);
 postRouter.delete(
   '/:postId',
   requireAuth,
@@ -43,6 +45,13 @@ postRouter.put(
   updatePostValidator,
   handleValidation,
   updatePost
+);
+
+postRouter.use(
+  '/:postId/comments',
+  requireAuth,
+  checkPostExists,
+  commentRouter
 );
 
 export default postRouter;
