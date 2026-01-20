@@ -1,12 +1,10 @@
 import prisma from '../lib/prisma.js';
+import { getPagination } from '../utils/pagination.js';
 import { errorResponse, successResponse } from '../utils/response.js';
 
 const getComments = async (req, res) => {
   const postId = req.params.postId;
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-  const skip = (page - 1) * limit;
-
+  const { page, limit, skip } = getPagination(req.query);
   const [comments, total] = await Promise.all([
     prisma.comment.findMany({
       where: {

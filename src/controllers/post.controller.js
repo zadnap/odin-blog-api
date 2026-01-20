@@ -134,19 +134,19 @@ const updatePost = async (req, res) => {
 const publishPost = async (req, res) => {
   const { postId } = req.params;
 
-  const result = await prisma.post.updateMany({
-    where: {
-      id: postId,
-      published: false,
-    },
-    data: {
-      published: true,
-    },
-  });
+  const post = await prisma.post.findUnique({ where: { id: postId } });
 
-  if (result.count === 0) {
-    throw new AppError('Post already published or not found', 409);
+  if (!post) {
+    throw new AppError('Post not found', 404);
   }
+  if (post.published) {
+    throw new AppError('Post already published', 400);
+  }
+
+  await prisma.post.update({
+    where: { id: postId },
+    data: { published: true },
+  });
 
   return successResponse(res);
 };
@@ -154,19 +154,19 @@ const publishPost = async (req, res) => {
 const unpublishPost = async (req, res) => {
   const { postId } = req.params;
 
-  const result = await prisma.post.updateMany({
-    where: {
-      id: postId,
-      published: true,
-    },
-    data: {
-      published: false,
-    },
-  });
+  const post = await prisma.post.findUnique({ where: { id: postId } });
 
-  if (result.count === 0) {
-    throw new AppError('Post already unpublished or not found', 409);
+  if (!post) {
+    throw new AppError('Post not found', 404);
   }
+  if (!post.published) {
+    throw new AppError('Post already unpublished', 400);
+  }
+
+  await prisma.post.update({
+    where: { id: postId },
+    data: { published: false },
+  });
 
   return successResponse(res);
 };
