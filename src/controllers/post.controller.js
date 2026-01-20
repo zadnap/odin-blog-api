@@ -160,4 +160,68 @@ const updatePost = async (req, res) => {
   }
 };
 
-export { getPosts, getPostBySlug, createPost, deletePost, updatePost };
+const publishPost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    const result = await prisma.post.updateMany({
+      where: {
+        id: postId,
+        published: false,
+      },
+      data: {
+        published: true,
+      },
+    });
+
+    if (result.count === 0) {
+      return errorResponse(res, {
+        statusCode: 404,
+        message: 'Post not found or already published',
+      });
+    }
+
+    return successResponse(res);
+  } catch (error) {
+    console.error('[PUBLISH_POST]', error);
+    return errorResponse(res);
+  }
+};
+
+const unpublishPost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    const result = await prisma.post.updateMany({
+      where: {
+        id: postId,
+        published: true,
+      },
+      data: {
+        published: false,
+      },
+    });
+
+    if (result.count === 0) {
+      return errorResponse(res, {
+        statusCode: 404,
+        message: 'Post not found or already unpublished',
+      });
+    }
+
+    return successResponse(res);
+  } catch (error) {
+    console.error('[UNPUBLISH_POST]', error);
+    return errorResponse(res);
+  }
+};
+
+export {
+  getPosts,
+  getPostBySlug,
+  createPost,
+  deletePost,
+  updatePost,
+  publishPost,
+  unpublishPost,
+};

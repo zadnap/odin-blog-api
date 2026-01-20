@@ -5,6 +5,8 @@ import {
   createPost,
   deletePost,
   updatePost,
+  publishPost,
+  unpublishPost,
 } from '../controllers/post.controller.js';
 import {
   createPostValidator,
@@ -45,6 +47,18 @@ postRouter.put(
   updatePostValidator,
   handleValidation,
   updatePost
+);
+postRouter.patch(
+  '/:postId/publish',
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  publishPost
+);
+postRouter.patch(
+  '/:postId/unpublish',
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  unpublishPost
 );
 
 postRouter.use(
