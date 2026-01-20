@@ -38,12 +38,14 @@ postRouter.delete(
   '/:postId',
   requireAuth,
   requireRole(ROLES.ADMIN),
+  checkPostExists,
   deletePost
 );
 postRouter.put(
   '/:postId',
   requireAuth,
   requireRole(ROLES.ADMIN),
+  checkPostExists,
   updatePostValidator,
   handleValidation,
   updatePost
@@ -52,12 +54,14 @@ postRouter.patch(
   '/:postId/publish',
   requireAuth,
   requireRole(ROLES.ADMIN),
+  checkPostExists,
   publishPost
 );
 postRouter.patch(
   '/:postId/unpublish',
   requireAuth,
   requireRole(ROLES.ADMIN),
+  checkPostExists,
   unpublishPost
 );
 
