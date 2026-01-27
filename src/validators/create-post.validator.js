@@ -5,6 +5,7 @@ const createPostValidator = [
     .trim()
     .notEmpty()
     .withMessage('Title is required')
+    .bail()
     .isLength({ max: 255 })
     .withMessage('Title must be at most 255 characters'),
 
