@@ -7,15 +7,20 @@ import generateUniqueSlug from '../utils/slugify.js';
 const getPosts = async (user, query) => {
   const { page, limit, skip } = getPagination(query);
   const where = getPostVisibilityFilter(user);
+
   const [posts, total] = await Promise.all([
     prisma.post.findMany({
       where,
       skip,
       take: limit,
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        published: true,
+        createdAt: true,
         author: {
           select: { id: true, username: true },
         },
@@ -40,10 +45,10 @@ const getPostBySlug = async (slug, isAdmin) => {
     where: { slug },
     include: {
       author: {
-        select: {
-          id: true,
-          username: true,
-        },
+        select: { id: true, username: true },
+      },
+      postSections: {
+        orderBy: { position: 'asc' },
       },
     },
   });
@@ -55,24 +60,37 @@ const getPostBySlug = async (slug, isAdmin) => {
   return post;
 };
 
-const createPost = async (userId, { title, content }) => {
-  const newPost = await prisma.post.create({
-    data: {
-      slug: await generateUniqueSlug(title),
-      title,
-      content,
-      userId,
-    },
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      content: true,
-      createdAt: true,
-    },
-  });
+const createPost = async (userId, { title, description, sections }) => {
+  return prisma.$transaction(async (tx) => {
+    const post = await tx.post.create({
+      data: {
+        slug: await generateUniqueSlug(title),
+        title,
+        description,
+        userId,
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        createdAt: true,
+      },
+    });
 
-  return newPost;
+    if (sections?.length) {
+      await tx.postSection.createMany({
+        data: sections.map((section, index) => ({
+          postId: post.id,
+          title: section.title,
+          content: section.content,
+          position: index,
+          imageUrl: section.imageUrl ?? null,
+        })),
+      });
+    }
+
+    return post;
+  });
 };
 
 const deletePost = async (postId) => {
@@ -83,31 +101,28 @@ const deletePost = async (postId) => {
   });
 };
 
-const updatePost = async (oldPost, { title, content }) => {
+const updatePost = async (oldPost, { title, description }) => {
   const data = {};
 
-  if (title !== undefined && title !== oldPost.title) {
+  if (title && title !== oldPost.title) {
     data.title = title;
     data.slug = await generateUniqueSlug(title);
   }
 
-  if (content !== undefined) {
-    data.content = content;
+  if (description !== undefined) {
+    data.description = description;
   }
 
-  const updatedPost = await prisma.post.update({
+  return prisma.post.update({
     where: { id: oldPost.id },
     data,
     select: {
       id: true,
       title: true,
-      content: true,
       slug: true,
       updatedAt: true,
     },
   });
-
-  return updatedPost;
 };
 
 const publishPost = async (post) => {

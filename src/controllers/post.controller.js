@@ -20,8 +20,12 @@ const getPostBySlug = async (req, res) => {
 
 const createPost = async (req, res) => {
   const userId = req.user.id;
-  const { title, content } = req.body;
-  const newPost = await postService.createPost(userId, { title, content });
+  const { title, description, sections } = req.body;
+  const newPost = await postService.createPost(userId, {
+    title,
+    description,
+    sections,
+  });
 
   return successResponse(res, { statusCode: 201, data: newPost });
 };
@@ -34,10 +38,11 @@ const deletePost = async (req, res) => {
 };
 
 const updatePost = async (req, res) => {
-  const { title, content } = req.body;
+  const { title, description, sections } = req.body;
   const updatedPost = await postService.updatePost(req.resource, {
     title,
-    content,
+    description,
+    sections,
   });
 
   return successResponse(res, { data: updatedPost });
