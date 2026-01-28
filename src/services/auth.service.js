@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
 import AppError from '../utils/AppError.js';
+import signToken from '../utils/signToken.js';
 
 const register = async ({ username, password }) => {
   const exists = await prisma.user.findUnique({ where: { username } });
@@ -11,34 +11,42 @@ const register = async ({ username, password }) => {
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  return prisma.user.create({
+  const user = await prisma.user.create({
     data: { username, password: hashedPassword },
     select: { id: true, username: true, role: true },
   });
+
+  const token = signToken(user);
+
+  return { user, token };
 };
 
 const login = async ({ username, password }) => {
-  const user = await prisma.user.findUnique({
+  const userWithPassword = await prisma.user.findUnique({
     where: { username },
-    select: { id: true, password: true },
+    select: {
+      id: true,
+      username: true,
+      role: true,
+      password: true,
+    },
   });
 
-  if (!user) {
+  if (!userWithPassword) {
     throw new AppError('Invalid credentials', 401);
   }
 
-  const isMatch = await bcrypt.compare(password, user.password);
+  const isMatch = await bcrypt.compare(password, userWithPassword.password);
   if (!isMatch) {
     throw new AppError('Invalid credentials', 401);
   }
 
-  if (!process.env.JWT_SECRET) {
-    throw new Error('JWT_SECRET not defined');
-  }
+  // eslint-disable-next-line no-unused-vars
+  const { password: _password, ...user } = userWithPassword;
 
-  return jwt.sign({ sub: user.id }, process.env.JWT_SECRET, {
-    expiresIn: '15d',
-  });
+  const token = signToken(user);
+
+  return { user, token };
 };
 
 export { register, login };
