@@ -16,7 +16,12 @@ const loginUser = async (req, res) => {
 
   return successResponse(res, {
     message: 'Login successfully',
-    data: { token },
+    data: {
+      token,
+      user: {
+        username: req.body.username,
+      },
+    },
   });
 };
 
