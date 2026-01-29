@@ -2,6 +2,7 @@ import express from 'express';
 import {
   checkExists,
   handleValidation,
+  requireAuth,
   requireOwnership,
 } from '../middlewares/index.js';
 import {
@@ -14,19 +15,21 @@ import {
 import { commentValidator } from '../validators/index.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
-const commentRouter = express.Router();
+const commentRouter = express.Router({ mergeParams: true });
 
 commentRouter.get('/', asyncHandler(getComments));
 
 commentRouter.get('/:commentId', asyncHandler(getCommentById));
 commentRouter.post(
   '/',
+  requireAuth,
   commentValidator,
   handleValidation,
   asyncHandler(createComment)
 );
 commentRouter.delete(
   '/:commentId',
+  requireAuth,
   checkExists({
     model: 'comment',
     param: 'commentId',
@@ -37,6 +40,7 @@ commentRouter.delete(
 );
 commentRouter.put(
   '/:commentId',
+  requireAuth,
   checkExists({
     model: 'comment',
     param: 'commentId',

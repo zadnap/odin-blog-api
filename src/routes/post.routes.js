@@ -68,7 +68,6 @@ postRouter.patch(
 
 postRouter.use(
   '/:postId/comments',
-  requireAuth,
   checkExists({ model: 'post', param: 'postId', message: 'Post not found' }),
   commentRouter
 );
