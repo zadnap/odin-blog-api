@@ -20,11 +20,12 @@ const getPostBySlug = async (req, res) => {
 
 const createPost = async (req, res) => {
   const userId = req.user.id;
-  const { title, description, sections } = req.body;
+  const { title, description, imageUrl, sections } = req.body;
   const newPost = await postService.createPost(userId, {
     title,
     description,
     sections,
+    imageUrl,
   });
 
   return successResponse(res, { statusCode: 201, data: newPost });

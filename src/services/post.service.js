@@ -61,7 +61,10 @@ const getPostBySlug = async (slug, isAdmin) => {
   return post;
 };
 
-const createPost = async (userId, { title, description, sections }) => {
+const createPost = async (
+  userId,
+  { title, description, sections, imageUrl }
+) => {
   return prisma.$transaction(async (tx) => {
     const post = await tx.post.create({
       data: {
@@ -69,11 +72,13 @@ const createPost = async (userId, { title, description, sections }) => {
         title,
         description,
         userId,
+        imageUrl,
       },
       select: {
         id: true,
         title: true,
         slug: true,
+        imageUrl: true,
         createdAt: true,
       },
     });
