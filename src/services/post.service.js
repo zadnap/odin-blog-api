@@ -21,6 +21,7 @@ const getPosts = async (user, query) => {
         description: true,
         published: true,
         createdAt: true,
+        imageUrl: true,
         author: {
           select: { id: true, username: true },
         },
